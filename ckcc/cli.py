@@ -51,9 +51,9 @@ def xfp2str(xfp):
 # Options we want for all commands
 #@click.group()
 #@click.option('--serial', '-s', default=None, metavar="HEX",
-                    help="Operate on specific unit (default: first found)")
+                    #help="Operate on specific unit (default: first found)")
 #@click.option('--simulator', '-x', default=False, is_flag=True,
-                    help="Connect to the simulator via Unix socket")
+                    #help="Connect to the simulator via Unix socket")
 def main(serial, simulator):
     global force_serial
     force_serial = serial
@@ -150,7 +150,7 @@ def bag_number(number):
 
 #@main.command('test')
 #@click.option('--single', '-s', default=None,
-            type=click.IntRange(0,255), help='If set, use this value on wire.')
+            #type=click.IntRange(0,255), help='If set, use this value on wire.')
 def usb_test(single):
     "Test USB connection (debug/dev)"
     dev = ColdcardDevice(sn=force_serial)
@@ -251,9 +251,9 @@ def real_file_upload(fd, blksize=MAX_BLK_LEN, do_upgrade=False, do_reboot=True, 
 #@main.command('upload')
 #@click.argument('filename', type=click.File('rb'))
 #@click.option('--blksize', default=MAX_BLK_LEN,
-            type=click.IntRange(256, MAX_BLK_LEN), help='Block size to use (testing)')
+            #type=click.IntRange(256, MAX_BLK_LEN), help='Block size to use (testing)')
 #@click.option('--multisig', '-m', default=False, is_flag=True,
-                                    help='Attempt multisig enroll using file')
+                                    #help='Attempt multisig enroll using file')
 def file_upload(filename, blksize, multisig=False):
     "Send file to Coldcard (PSBT transaction or firmware)"
 
@@ -267,7 +267,7 @@ def file_upload(filename, blksize, multisig=False):
 
 #@main.command('upgrade')
 #@click.argument('filename', type=click.File('rb'), metavar="FIRMWARE.dfu",
-                    default='../stm32/firmware-signed.dfu')
+                    #default='../stm32/firmware-signed.dfu')
 #@click.option('--stop-early', '-s', default=False, is_flag=True, help='Stop just before reboot')
 def firmware_upgrade(filename, stop_early):
     "Send firmware file (.dfu) and trigger upgrade process"
@@ -541,11 +541,11 @@ def sign_transaction(psbt_in, psbt_out=None, verbose=False, b64_mode=False, hex_
 
 #@main.command('backup')
 #@click.option('--outdir', '-d',
-            type=click.Path(exists=True,dir_okay=True, file_okay=False, writable=True),
-            help="Save into indicated directory (auto filename)", default='.')
+            #type=click.Path(exists=True,dir_okay=True, file_okay=False, writable=True),
+            #help="Save into indicated directory (auto filename)", default='.')
 #@click.option('--outfile', '-o', metavar="filename.7z",
-                        help="Name for backup file", default=None,
-                        type=click.File('wb'))
+                        #help="Name for backup file", default=None,
+                        #type=click.File('wb'))
 ##@click.option('--verbose', '-v', is_flag=True, help='Show more details')
 #@display_errors
 def start_backup(outdir, outfile, verbose=False):
@@ -677,7 +677,7 @@ def show_address(script, fingerprints, quiet=False, segwit=False, wrap=False):
 #@main.command('pass')
 #@click.argument('passphrase', required=False)
 #@click.option('--passphrase', prompt=True, hide_input=True,
-              confirmation_prompt=False)
+              #confirmation_prompt=False)
 #@click.option('--verbose', '-v', is_flag=True, help='Show new root xpub')
 def bip39_passphrase(passphrase, verbose=False):
     "Provide a BIP39 passphrase"
@@ -714,7 +714,7 @@ def bip39_passphrase(passphrase, verbose=False):
 #@click.option('--signers', '-n', 'num_signers', type=int, help='N signers in wallet', default=3)
 #@click.option('--name', '-l', type=str, help='Wallet name on Coldcard', default='Unnamed')
 #@click.option('--output-file', '-f', type=click.File('wt', lazy=True),
-                                help='Save configuration to file')
+                                #help='Save configuration to file')
 #@click.option('--verbose', '-v', is_flag=True, help='Show file uploaded')
 #@click.option('--path', '-p', default="m/45'", help="Derivation for key (default: BIP45 = m/45')")
 #@click.option('--add', '-a', 'just_add', is_flag=True, help='Just show line required to add this Coldcard')

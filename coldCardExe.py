@@ -1,4 +1,4 @@
-from ckccProj.ckcc.cli import get_block_chain, get_version, _list
+from ckcc.cli import get_block_chain, get_version, _list
 import sys
 arguments = sys.argv[1:]
 print(arguments)
