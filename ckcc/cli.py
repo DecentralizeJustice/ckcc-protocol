@@ -7,7 +7,7 @@
 # That will create the command "ckcc" in your path.
 #
 # Background:
-# - see <https://github.com/trezor/cython-hidapi/blob/master/hid.pyx> for HID api 
+# - see <https://github.com/trezor/cython-hidapi/blob/master/hid.pyx> for HID api
 #
 #
 import hid, click, sys, os, pdb, struct, time, io, re, json
@@ -49,10 +49,10 @@ def xfp2str(xfp):
 
 
 # Options we want for all commands
-@click.group()
-@click.option('--serial', '-s', default=None, metavar="HEX",
+#@click.group()
+#@click.option('--serial', '-s', default=None, metavar="HEX",
                     help="Operate on specific unit (default: first found)")
-@click.option('--simulator', '-x', default=False, is_flag=True,
+#@click.option('--simulator', '-x', default=False, is_flag=True,
                     help="Connect to the simulator via Unix socket")
 def main(serial, simulator):
     global force_serial
@@ -60,32 +60,32 @@ def main(serial, simulator):
 
     if simulator:
         force_serial = '/tmp/ckcc-simulator.sock'
-    
+
 def display_errors(f):
     # clean-up display of errors from Coldcard
-    @wraps(f)
+    #@wraps(f)
     def wrapper(*args, **kws):
         try:
             return f(*args, **kws)
         except CCProtoError as exc:
-            click.echo("\n%s\n" % str(exc.args[0]))
+            print("\n%s\n" % str(exc.args[0]))
             sys.exit(1)
     return wrapper
-        
-@main.command()
+
+#@main.command()
 def debug():
     "Start interactive (local) debug session"
     import code
     import readline
     import atexit
     import os
-            
+
     class HistoryConsole(code.InteractiveConsole):
         def __init__(self, locals=None, filename="<console>",
                      histfile=os.path.expanduser("~/.console-history")):
             code.InteractiveConsole.__init__(self, locals, filename)
             self.init_history(histfile)
-        
+
         def init_history(self, histfile):
             readline.parse_and_bind("tab: complete")
             if hasattr(readline, "read_history_file"):
@@ -94,7 +94,7 @@ def debug():
                 except IOError:
                     pass
                 atexit.register(self.save_history, histfile)
-        
+
         def save_history(self, histfile):
             readline.write_history_file(histfile)
 
@@ -107,20 +107,20 @@ def debug():
     cli = HistoryConsole(locals=dict(globals(), **locals()))
     cli.interact(banner="Go for it: 'CC' is the connected device, SR=CC.send_recv", exitmsg='')
 
-@main.command('list')
+#@main.command('list')
 def _list():
     "List all attached Coldcard devices"
 
     count = 0
     for info in hid.enumerate(COINKITE_VID, CKCC_PID):
-        click.echo("\nColdcard {serial_number}:\n{nice}".format(
+        print("\nColdcard {serial_number}:\n{nice}".format(
                             nice=pformat(info, indent=4)[1:-1], **info))
         count += 1
 
     if not count:
-        click.echo("(none found)")
+        print("(none found)")
 
-@main.command()
+#@main.command()
 def logout():
     "Securely logout of device (will require replug to start over)"
     dev = ColdcardDevice(sn=force_serial)
@@ -128,7 +128,7 @@ def logout():
     resp = dev.send_recv(CCProtocolPacker.logout())
     print("Device says: %r" % resp if resp else "Okay!")
 
-@main.command()
+#@main.command()
 def reboot():
     "Reboot coldcard, force relogin and start over"
     dev = ColdcardDevice(sn=force_serial)
@@ -136,8 +136,8 @@ def reboot():
     resp = dev.send_recv(CCProtocolPacker.reboot())
     print("Device says: %r" % resp if resp else "Okay!")
 
-@main.command('bag')
-@click.option('--number', '-n', metavar='BAG_NUMBER', default=None)
+#@main.command('bag')
+#@click.option('--number', '-n', metavar='BAG_NUMBER', default=None)
 def bag_number(number):
     "Factory: set or read bag number -- single use only!"
     dev = ColdcardDevice(sn=force_serial)
@@ -148,15 +148,15 @@ def bag_number(number):
 
     print("Bag number: %r" % resp)
 
-@main.command('test')
-@click.option('--single', '-s', default=None,
+#@main.command('test')
+#@click.option('--single', '-s', default=None,
             type=click.IntRange(0,255), help='If set, use this value on wire.')
 def usb_test(single):
     "Test USB connection (debug/dev)"
     dev = ColdcardDevice(sn=force_serial)
 
     rng = []
-    rng.extend(range(55, 66))       # buggy lengths are around 64 
+    rng.extend(range(55, 66))       # buggy lengths are around 64
     rng.extend(range(1013, 1024))
 
     # we have 4 bytes of overhead (args) for ping cmd, so this will be max-length
@@ -168,7 +168,7 @@ def usb_test(single):
         print("Ping with length: %d" % i, end='')
         body = os.urandom(i) if single is None else bytes([single]*i)
         rb = dev.send_recv(CCProtocolPacker.ping(body))
-        assert rb == body, "Fail @ len: %d, got back %d bytes\n%r !=\n%r" % (
+        assert rb == body, "Fail #@ len: %d, got back %d bytes\n%r !=\n%r" % (
                                         i, len(rb), b2a_hex(body), b2a_hex(rb))
         print("  Okay")
 
@@ -197,17 +197,17 @@ def real_file_upload(fd, blksize=MAX_BLK_LEN, do_upgrade=False, do_reboot=True, 
             hdr = fd.read(FW_HEADER_SIZE)
 
             magic = struct.unpack_from("<I", hdr)[0]
-            #print("hdr @ 0x%x: %s" % (FW_HEADER_OFFSET, b2a_hex(hdr)))
+            #print("hdr #@ 0x%x: %s" % (FW_HEADER_OFFSET, b2a_hex(hdr)))
         except:
             magic = None
 
         if magic != FW_HEADER_MAGIC:
-            click.echo("This does not look like a firmware file! Bad magic value.")
+            print("This does not look like a firmware file! Bad magic value.")
             sys.exit(1)
 
         fd.seek(offset)
 
-    click.echo("%d bytes (start @ %d) to send from %r" % (sz, fd.tell(), 
+    print("%d bytes (start #@ %d) to send from %r" % (sz, fd.tell(),
             os.path.basename(fd.name) if hasattr(fd, 'name') else 'memory'), err=1)
 
     left = sz
@@ -226,7 +226,7 @@ def real_file_upload(fd, blksize=MAX_BLK_LEN, do_upgrade=False, do_reboot=True, 
     result = dev.send_recv(CCProtocolPacker.sha256())
     assert len(result) == 32
     if result != expect:
-        click.echo("Wrong checksum:\nexpect: %s\n   got: %s" 
+        print("Wrong checksum:\nexpect: %s\n   got: %s"
                     % (b2a_hex(expect).decode('ascii'), b2a_hex(result).decode('ascii')), err=1)
         sys.exit(1)
 
@@ -245,14 +245,14 @@ def real_file_upload(fd, blksize=MAX_BLK_LEN, do_upgrade=False, do_reboot=True, 
     assert expect == final_chk, "Checksum mismatch after all that?"
 
     if do_reboot:
-        click.echo("Upgrade started. Observe Coldcard screen for progress.", err=1)
+        print("Upgrade started. Observe Coldcard screen for progress.", err=1)
         dev.send_recv(CCProtocolPacker.reboot())
 
-@main.command('upload')
-@click.argument('filename', type=click.File('rb'))
-@click.option('--blksize', default=MAX_BLK_LEN, 
+#@main.command('upload')
+#@click.argument('filename', type=click.File('rb'))
+#@click.option('--blksize', default=MAX_BLK_LEN,
             type=click.IntRange(256, MAX_BLK_LEN), help='Block size to use (testing)')
-@click.option('--multisig', '-m', default=False, is_flag=True,
+#@click.option('--multisig', '-m', default=False, is_flag=True,
                                     help='Attempt multisig enroll using file')
 def file_upload(filename, blksize, multisig=False):
     "Send file to Coldcard (PSBT transaction or firmware)"
@@ -265,10 +265,10 @@ def file_upload(filename, blksize, multisig=False):
     if multisig:
         dev.send_recv(CCProtocolPacker.multisig_enroll(file_len, sha))
 
-@main.command('upgrade')
-@click.argument('filename', type=click.File('rb'), metavar="FIRMWARE.dfu",
+#@main.command('upgrade')
+#@click.argument('filename', type=click.File('rb'), metavar="FIRMWARE.dfu",
                     default='../stm32/firmware-signed.dfu')
-@click.option('--stop-early', '-s', default=False, is_flag=True, help='Stop just before reboot')
+#@click.option('--stop-early', '-s', default=False, is_flag=True, help='Stop just before reboot')
 def firmware_upgrade(filename, stop_early):
     "Send firmware file (.dfu) and trigger upgrade process"
 
@@ -277,8 +277,8 @@ def firmware_upgrade(filename, stop_early):
 # First account, not change, first index for Bitcoin mainnet in BIP44 path
 BIP44_FIRST = "m/44'/0'/0'/0"
 
-@main.command('xpub')
-@click.argument('subpath', default='m')
+#@main.command('xpub')
+#@click.argument('subpath', default='m')
 def get_xpub(subpath):
     "Get the XPUB for this wallet (master level, or any derivation)"
 
@@ -290,10 +290,10 @@ def get_xpub(subpath):
 
     xpub = dev.send_recv(CCProtocolPacker.get_xpub(subpath), timeout=None)
 
-    click.echo(xpub)
+    print(xpub)
 
-@main.command('pubkey')
-@click.argument('subpath', default='m')
+#@main.command('pubkey')
+#@click.argument('subpath', default='m')
 def get_pubkey(subpath):
     '''Get the public key for a derivation path
 
@@ -311,10 +311,10 @@ def get_pubkey(subpath):
 
     node = BIP32Node.from_hwif(xpub)
 
-    click.echo(b2a_hex(node.sec()))
+    print(b2a_hex(node.sec()))
 
-@main.command('xfp')
-@click.option('--swab', '-s', is_flag=True, help='Reverse endian of result (32-bit)')
+#@main.command('xfp')
+#@click.option('--swab', '-s', is_flag=True, help='Reverse endian of result (32-bit)')
 def get_fingerprint(swab):
     "Get the fingerprint for this wallet (master level)"
 
@@ -325,12 +325,12 @@ def get_fingerprint(swab):
 
     if swab:
         # this is how we used to show XFP values: LE32 hex with 0x in front.
-        click.echo('0x%08x' % xfp)
+        print('0x%08x' % xfp)
     else:
         # network order = BE32 = top 32-bits of hash160(pubkey) = 4 bytes in bip32 serialization
-        click.echo(xfp2str(xfp))
+        print(xfp2str(xfp))
 
-@main.command('version')
+#@main.command('version')
 def get_version():
     "Get the version of the firmware installed"
 
@@ -338,9 +338,9 @@ def get_version():
 
     v = dev.send_recv(CCProtocolPacker.version())
 
-    click.echo(v)
+    print(v)
 
-@main.command('chain')
+#@main.command('chain')
 def get_block_chain():
     '''Get which blockchain (Bitcoin/Testnet) is configured.
 
@@ -351,42 +351,42 @@ def get_block_chain():
 
     code = dev.send_recv(CCProtocolPacker.block_chain())
 
-    click.echo(code)
+    print(code)
 
 
-@main.command('eval')
-@click.argument('stmt', nargs=-1)
+#@main.command('eval')
+#@click.argument('stmt', nargs=-1)
 def run_eval(stmt):
     "Simulator only: eval a python statement"
-        
+
     dev = ColdcardDevice(sn=force_serial)
 
     stmt = ' '.join(stmt)
 
     v = dev.send_recv(b'EVAL' + stmt.encode('utf-8'))
 
-    click.echo(v)
+    print(v)
 
-@main.command('exec')
-@click.argument('stmt', nargs=-1)
+#@main.command('exec')
+#@click.argument('stmt', nargs=-1)
 def run_eval(stmt):
     "Simulator only: exec a python script"
-        
+
     dev = ColdcardDevice(sn=force_serial)
 
     stmt = ' '.join(stmt)
 
     v = dev.send_recv(b'EXEC' + stmt.encode('utf-8'))
 
-    click.echo(v)
-    
-@main.command('msg')
-@click.argument('message')
-@click.option('--path', '-p', default=BIP44_FIRST, help='Derivation for key to use')
-@click.option('--verbose', '-v', is_flag=True, help='Include fancy ascii armour')
-@click.option('--just-sig', '-j', is_flag=True, help='Just the signature itself, nothing more')
-@click.option('--segwit', '-s', is_flag=True, help='Address in segwit native (p2wpkh, bech32)')
-@click.option('--wrap', '-w', is_flag=True, help='Address in segwit wrapped in P2SH (p2wpkh)')
+    print(v)
+
+#@main.command('msg')
+#@click.argument('message')
+#@click.option('--path', '-p', default=BIP44_FIRST, help='Derivation for key to use')
+#@click.option('--verbose', '-v', is_flag=True, help='Include fancy ascii armour')
+#@click.option('--just-sig', '-j', is_flag=True, help='Just the signature itself, nothing more')
+#@click.option('--segwit', '-s', is_flag=True, help='Address in segwit native (p2wpkh, bech32)')
+#@click.option('--wrap', '-w', is_flag=True, help='Address in segwit wrapped in P2SH (p2wpkh)')
 def sign_message(message, path, verbose=True, just_sig=False, wrap=False, segwit=False):
     "Sign a short text message"
 
@@ -423,7 +423,7 @@ def sign_message(message, path, verbose=True, just_sig=False, wrap=False, segwit
     sys.stderr.flush()
 
     if len(done) != 2:
-        click.echo('Failed: %r' % done)
+        print('Failed: %r' % done)
         sys.exit(1)
 
     addr, raw = done
@@ -431,14 +431,14 @@ def sign_message(message, path, verbose=True, just_sig=False, wrap=False, segwit
     sig = str(b64encode(raw), 'ascii').replace('\n', '')
 
     if just_sig:
-        click.echo(str(sig))
+        print(str(sig))
     elif verbose:
-        click.echo('-----BEGIN SIGNED MESSAGE-----\n{msg}\n-----BEGIN '
+        print('-----BEGIN SIGNED MESSAGE-----\n{msg}\n-----BEGIN '
                   'SIGNATURE-----\n{addr}\n{sig}\n-----END SIGNED MESSAGE-----'.format(
                         msg=message.decode('ascii'), addr=addr, sig=sig))
     else:
-        click.echo('%s\n%s\n%s' % (message.decode('ascii'), addr, sig))
-    
+        print('%s\n%s\n%s' % (message.decode('ascii'), addr, sig))
+
 def wait_and_download(dev, req, fn):
     # Wait for user action on the device... by polling w/ indicated request
     # - also download resulting file
@@ -457,28 +457,28 @@ def wait_and_download(dev, req, fn):
     sys.stderr.flush()
 
     if len(done) != 2:
-        click.echo('Failed: %r' % done)
+        print('Failed: %r' % done)
         sys.exit(1)
 
     result_len, result_sha = done
 
     # download the result.
 
-    click.echo("Ok! Downloading result (%d bytes)" % result_len, err=1)
+    print("Ok! Downloading result (%d bytes)" % result_len, err=1)
     result = dev.download_file(result_len, result_sha, file_number=fn)
 
     return result, result_sha
-    
-@main.command('sign')
-@click.argument('psbt_in', type=click.File('rb'))
-@click.argument('psbt_out', type=click.File('wb'), required=False)
-@click.option('--verbose', '-v', is_flag=True, help='Show more details')
-@click.option('--finalize', '-f', is_flag=True, help='Show final signed transaction, ready for transmission')
-@click.option('--visualize', '-z', is_flag=True, help='Show text of Coldcard\'s interpretation of the transaction (does not create transaction, no interaction needed)')
-@click.option('--signed', '-s', is_flag=True, help='Include a signature over visualization text')
-@click.option('--hex', '-x', 'hex_mode', is_flag=True, help="Write out (signed) PSBT in hexidecimal")
-@click.option('--base64', '-6', 'b64_mode', is_flag=True, help="Write out (signed) PSBT encoded in base64")
-@display_errors
+
+#@main.command('sign')
+#@click.argument('psbt_in', type=click.File('rb'))
+#@click.argument('psbt_out', type=click.File('wb'), required=False)
+#@click.option('--verbose', '-v', is_flag=True, help='Show more details')
+#@click.option('--finalize', '-f', is_flag=True, help='Show final signed transaction, ready for transmission')
+#@click.option('--visualize', '-z', is_flag=True, help='Show text of Coldcard\'s interpretation of the transaction (does not create transaction, no interaction needed)')
+#@click.option('--signed', '-s', is_flag=True, help='Include a signature over visualization text')
+#@click.option('--hex', '-x', 'hex_mode', is_flag=True, help="Write out (signed) PSBT in hexidecimal")
+#@click.option('--base64', '-6', 'b64_mode', is_flag=True, help="Write out (signed) PSBT encoded in base64")
+#@display_errors
 def sign_transaction(psbt_in, psbt_out=None, verbose=False, b64_mode=False, hex_mode=False, finalize=False, visualize=False, signed=False):
     "Approve a spending transaction by signing it on Coldcard"
 
@@ -496,7 +496,7 @@ def sign_transaction(psbt_in, psbt_out=None, verbose=False, b64_mode=False, hex_
         # Base64 encoded input
         psbt_in = io.BytesIO(b64decode(psbt_in.read()))
     elif taste[0:5] != b'psbt\xff':
-        click.echo("File doesn't have PSBT magic number at start.")
+        print("File doesn't have PSBT magic number at start.")
         sys.exit(1)
 
     # upload the transaction
@@ -526,7 +526,7 @@ def sign_transaction(psbt_in, psbt_out=None, verbose=False, b64_mode=False, hex_
         if psbt_out:
             psbt_out.write(result)
         else:
-            click.echo(result, nl=False)
+            print(result, nl=False)
     else:
         # save it
         if hex_mode:
@@ -537,17 +537,17 @@ def sign_transaction(psbt_in, psbt_out=None, verbose=False, b64_mode=False, hex_
         if psbt_out:
             psbt_out.write(result)
         else:
-            click.echo(result)
+            print(result)
 
-@main.command('backup')
-@click.option('--outdir', '-d', 
+#@main.command('backup')
+#@click.option('--outdir', '-d',
             type=click.Path(exists=True,dir_okay=True, file_okay=False, writable=True),
             help="Save into indicated directory (auto filename)", default='.')
-@click.option('--outfile', '-o', metavar="filename.7z",
+#@click.option('--outfile', '-o', metavar="filename.7z",
                         help="Name for backup file", default=None,
                         type=click.File('wb'))
-#@click.option('--verbose', '-v', is_flag=True, help='Show more details')
-@display_errors
+##@click.option('--verbose', '-v', is_flag=True, help='Show more details')
+#@display_errors
 def start_backup(outdir, outfile, verbose=False):
     '''Creates 7z encrypted backup file after prompting user to remember a massive passphrase. \
 Downloads the AES-encrypted data backup and by default, saves into current directory using \
@@ -574,14 +574,14 @@ a filename based on today's date.'''
 
         open(fn, 'wb').write(result)
 
-    click.echo("Wrote %d bytes into: %s\nSHA256: %s" % (len(result), fn, str(b2a_hex(chk), 'ascii')))
-        
-@main.command('addr')
-@click.argument('path', default=BIP44_FIRST, metavar='[m/1/2/3]', required=False)
-@click.option('--segwit', '-s', is_flag=True, help='Show in segwit native (p2wpkh, bech32)')
-@click.option('--wrap', '-w', is_flag=True, help='Show in segwit wrapped in P2SH (p2wpkh)')
-@click.option('--quiet', '-q', is_flag=True, help='Show less details; just the address')
-@click.option('--path', '-p', default=BIP44_FIRST, help='Derivation for key to show (or first arg)')
+    print("Wrote %d bytes into: %s\nSHA256: %s" % (len(result), fn, str(b2a_hex(chk), 'ascii')))
+
+#@main.command('addr')
+#@click.argument('path', default=BIP44_FIRST, metavar='[m/1/2/3]', required=False)
+#@click.option('--segwit', '-s', is_flag=True, help='Show in segwit native (p2wpkh, bech32)')
+#@click.option('--wrap', '-w', is_flag=True, help='Show in segwit wrapped in P2SH (p2wpkh)')
+#@click.option('--quiet', '-q', is_flag=True, help='Show less details; just the address')
+#@click.option('--path', '-p', default=BIP44_FIRST, help='Derivation for key to show (or first arg)')
 def show_address(path, quiet=False, segwit=False, wrap=False):
     "Show the human version of an address"
 
@@ -597,9 +597,9 @@ def show_address(path, quiet=False, segwit=False, wrap=False):
     addr = dev.send_recv(CCProtocolPacker.show_address(path, addr_fmt), timeout=None)
 
     if quiet:
-        click.echo(addr)
+        print(addr)
     else:
-        click.echo('Displaying address:\n\n%s\n' % addr)
+        print('Displaying address:\n\n%s\n' % addr)
 
 def str_to_int_path(xfp, path):
     # convert text  m/34'/33/44 into BIP174 binary compat format
@@ -609,25 +609,25 @@ def str_to_int_path(xfp, path):
     for i in path.split('/'):
         if i == 'm': continue
         if not i: continue      # trailing or duplicated slashes
-        
+
         if i[-1] in "'phHP":
             assert len(i) >= 2, i
             here = int(i[:-1]) | 0x80000000
         else:
             here = int(i)
             assert 0 <= here < 0x80000000, here
-        
+
         rv.append(here)
 
     return rv
 
 
-@main.command('p2sh')
-@click.argument('script', type=str, nargs=1, required=True)
-@click.argument('fingerprints', type=str, nargs=-1, required=True)
-@click.option('--segwit', '-s', is_flag=True, help='Show in segwit native (p2wpkh, bech32)')
-@click.option('--wrap', '-w', is_flag=True, help='Show as segwit wrapped in P2SH (p2wpkh)')
-@click.option('--quiet', '-q', is_flag=True, help='Show less details; just the address')
+#@main.command('p2sh')
+#@click.argument('script', type=str, nargs=1, required=True)
+#@click.argument('fingerprints', type=str, nargs=-1, required=True)
+#@click.option('--segwit', '-s', is_flag=True, help='Show in segwit native (p2wpkh, bech32)')
+#@click.option('--wrap', '-w', is_flag=True, help='Show as segwit wrapped in P2SH (p2wpkh)')
+#@click.option('--quiet', '-q', is_flag=True, help='Show less details; just the address')
 def show_address(script, fingerprints, quiet=False, segwit=False, wrap=False):
     '''Show a multisig payment address on-screen.
 
@@ -669,16 +669,16 @@ def show_address(script, fingerprints, quiet=False, segwit=False, wrap=False):
                             min_signers, xfp_paths, script, addr_fmt=addr_fmt), timeout=None)
 
     if quiet:
-        click.echo(addr)
+        print(addr)
     else:
-        click.echo('Displaying address:\n\n%s\n' % addr)
+        print('Displaying address:\n\n%s\n' % addr)
 
 
-@main.command('pass')
-@click.argument('passphrase', required=False)
-@click.option('--passphrase', prompt=True, hide_input=True,
+#@main.command('pass')
+#@click.argument('passphrase', required=False)
+#@click.option('--passphrase', prompt=True, hide_input=True,
               confirmation_prompt=False)
-@click.option('--verbose', '-v', is_flag=True, help='Show new root xpub')
+#@click.option('--verbose', '-v', is_flag=True, help='Show new root xpub')
 def bip39_passphrase(passphrase, verbose=False):
     "Provide a BIP39 passphrase"
 
@@ -704,20 +704,20 @@ def bip39_passphrase(passphrase, verbose=False):
 
     if verbose:
         xpub = done
-        click.echo(xpub)
+        print(xpub)
     else:
-        click.echo('Done.')
+        print('Done.')
 
 
-@main.command('multisig')
-@click.option('--min-signers', '-m', type=int, help='Minimum M signers of N required to approve (default: all)', default=0)
-@click.option('--signers', '-n', 'num_signers', type=int, help='N signers in wallet', default=3)
-@click.option('--name', '-l', type=str, help='Wallet name on Coldcard', default='Unnamed')
-@click.option('--output-file', '-f', type=click.File('wt', lazy=True),
+#@main.command('multisig')
+#@click.option('--min-signers', '-m', type=int, help='Minimum M signers of N required to approve (default: all)', default=0)
+#@click.option('--signers', '-n', 'num_signers', type=int, help='N signers in wallet', default=3)
+#@click.option('--name', '-l', type=str, help='Wallet name on Coldcard', default='Unnamed')
+#@click.option('--output-file', '-f', type=click.File('wt', lazy=True),
                                 help='Save configuration to file')
-@click.option('--verbose', '-v', is_flag=True, help='Show file uploaded')
-@click.option('--path', '-p', default="m/45'", help="Derivation for key (default: BIP45 = m/45')")
-@click.option('--add', '-a', 'just_add', is_flag=True, help='Just show line required to add this Coldcard')
+#@click.option('--verbose', '-v', is_flag=True, help='Show file uploaded')
+#@click.option('--path', '-p', default="m/45'", help="Derivation for key (default: BIP45 = m/45')")
+#@click.option('--add', '-a', 'just_add', is_flag=True, help='Just show line required to add this Coldcard')
 def enroll_xpub(name, min_signers, path,  num_signers, output_file=None, verbose=False, just_add=False):
     '''
 Create a skeleton file which defines a multisig wallet.
@@ -733,7 +733,7 @@ When completed, use with: "ckcc upload -m wallet.txt" or put on SD card.
     new_line = "%s: %s" % (xfp2str(xfp), my_xpub)
 
     if just_add:
-        click.echo(new_line)
+        print(new_line)
         sys.exit(0)
 
     N = num_signers
@@ -742,18 +742,18 @@ When completed, use with: "ckcc upload -m wallet.txt" or put on SD card.
         N = min_signers
 
     if not (1 <= N < 15):
-        click.echo("N must be 1..15")
+        print("N must be 1..15")
         sys.exit(1)
 
     if min_signers == 0:
-        min_signers = N 
+        min_signers = N
 
     if not (1 <= min_signers <= N):
-        click.echo(f"Minimum number of signers (M) must be between 1 and N={N}")
+        print(f"Minimum number of signers (M) must be between 1 and N={N}")
         sys.exit(1)
 
     if not (1 <= len(name) <= 20) or name != str(name.encode('utf8'), 'ascii', 'ignore'):
-        click.echo("Name must be between 1 and 20 characters of ASCII.")
+        print("Name must be between 1 and 20 characters of ASCII.")
         sys.exit(1)
 
     # render into a template
@@ -763,16 +763,16 @@ When completed, use with: "ckcc upload -m wallet.txt" or put on SD card.
         config += '\n'
 
     if verbose or not output_file:
-        click.echo(config[:-1])
+        print(config[:-1])
 
     if output_file:
         output_file.write(config)
         output_file.close()
-        click.echo(f"Wrote to: {output_file.name}")
+        print(f"Wrote to: {output_file.name}")
 
-@main.command('hsm-start')
-@click.argument('policy', type=click.Path(exists=True,dir_okay=False), metavar="policy.json", required=False)
-@click.option('--dry-run', '-n', is_flag=True, help="Just validate file, don't upload")
+#@main.command('hsm-start')
+#@click.argument('policy', type=click.Path(exists=True,dir_okay=False), metavar="policy.json", required=False)
+#@click.option('--dry-run', '-n', is_flag=True, help="Just validate file, don't upload")
 def hsm_setup(policy=None, dry_run=False):
     '''
 Enable Hardware Security Module (HSM) mode.
@@ -790,7 +790,7 @@ All PSBT's will be signed automatically based on that policy.
             raw = open(policy, 'rt').read()
             j = json.loads(raw)
 
-            click.echo("Policy ok")
+            print("Policy ok")
             sys.exit(0)
 
         file_len, sha = real_file_upload(open(policy, 'rb'), dev=dev)
@@ -802,16 +802,16 @@ All PSBT's will be signed automatically based on that policy.
 
         dev.send_recv(CCProtocolPacker.hsm_start())
 
-    click.echo("Approve HSM policy on Coldcard screen.")
+    print("Approve HSM policy on Coldcard screen.")
 
-@main.command('hsm')
+#@main.command('hsm')
 def hsm_status():
     '''
 Get current status of HSM feature.
 
 Is it running, what is the policy (summary only).
 '''
-    
+
     dev = ColdcardDevice(sn=force_serial)
     dev.check_mitm()
 
@@ -819,18 +819,18 @@ Is it running, what is the policy (summary only).
 
     o = json.loads(resp)
 
-    click.echo(pformat(o))
+    print(pformat(o))
 
-@main.command('user')
-@click.argument('username', type=str, metavar="USERNAME", required=True)
-@click.option('--totp', '-t', 'totp_create', is_flag=True, help='Do TOTP and let Coldcard pick secret')
-@click.option('--pass', 'pick_pass', is_flag=True, help='Use a password picked by Coldcard')
-@click.option('--ask-pass', '-a', is_flag=True, help='Define password here (interactive)')
-@click.option('--totp-secret', '-s', help='BASE32 encoded secret for TOTP 2FA method (not great)')
-@click.option('--text-secret', '-p', help='Provide password on command line (not great)')
-@click.option('--delete', '-d', 'do_delete', is_flag=True, help='Remove a user by name')
-@click.option('--show-qr', '-q', is_flag=True, help='Show enroll QR contents (locally)')
-@click.option('--hotp', is_flag=True, help='Use HOTP instead of TOTP (dev only)')
+#@main.command('user')
+#@click.argument('username', type=str, metavar="USERNAME", required=True)
+#@click.option('--totp', '-t', 'totp_create', is_flag=True, help='Do TOTP and let Coldcard pick secret')
+#@click.option('--pass', 'pick_pass', is_flag=True, help='Use a password picked by Coldcard')
+#@click.option('--ask-pass', '-a', is_flag=True, help='Define password here (interactive)')
+#@click.option('--totp-secret', '-s', help='BASE32 encoded secret for TOTP 2FA method (not great)')
+#@click.option('--text-secret', '-p', help='Provide password on command line (not great)')
+#@click.option('--delete', '-d', 'do_delete', is_flag=True, help='Remove a user by name')
+#@click.option('--show-qr', '-q', is_flag=True, help='Show enroll QR contents (locally)')
+#@click.option('--hotp', is_flag=True, help='Use HOTP instead of TOTP (dev only)')
 def new_user(username, totp_create=False, totp_secret=None, text_secret=None, ask_pass=False,
                 do_delete=False, debug=False, show_qr=False, hotp=False, pick_pass=False):
     '''
@@ -850,7 +850,7 @@ be shown on the Coldcard screen.
 
     if do_delete:
         dev.send_recv(CCProtocolPacker.delete_user(username))
-        click.echo('Deleted, if it was there')
+        print('Deleted, if it was there')
         return
 
     if ask_pass:
@@ -872,7 +872,7 @@ be shown on the Coldcard screen.
         # default is TOTP
         secret = b''
         mode = USER_AUTH_TOTP
-    
+
     if mode == USER_AUTH_HMAC:
         # default is text passwords
         secret = dev.hash_password(text_secret.encode('utf8')) if text_secret else b''
@@ -889,15 +889,15 @@ be shown on the Coldcard screen.
         username = username.decode('ascii')
         secret = new_secret or b32encode(secret).decode('ascii')
         mode = 'hotp' if mode == USER_AUTH_HOTP else 'totp'
-        click.echo(f'otpauth://{mode}/{username}?secret={secret}&issuer=Coldcard%20{dev.serial}')
+        print(f'otpauth://{mode}/{username}?secret={secret}&issuer=Coldcard%20{dev.serial}')
     elif not text_secret and new_secret:
-        click.echo(f'New password is: {new_secret}')
+        print(f'New password is: {new_secret}')
     else:
-        click.echo('Done')
+        print('Done')
 
-@main.command('local-conf')
-@click.argument('psbt-file', type=click.File('rb'), required=True, metavar="Binary PSBT")
-@click.option('--next', '-n', 'next_code', type=str, help='next_local_code from Coldcard (default: ask it)')
+#@main.command('local-conf')
+#@click.argument('psbt-file', type=click.File('rb'), required=True, metavar="Binary PSBT")
+#@click.option('--next', '-n', 'next_code', type=str, help='next_local_code from Coldcard (default: ask it)')
 def user_auth(psbt_file, next_code=None):
     '''
 Generate the 6-digit code needed for a specific PSBT file to authorize
@@ -921,12 +921,12 @@ it's signing on the Coldcard in HSM mode.
 
     print("Local authorization code is:\n\n\t%s\n" % rv)
 
-@main.command('auth')
-@click.argument('username', type=str, metavar="USERNAME", required=True)
-@click.argument('token', type=str, metavar="[TOTP]", required=False)
-@click.option('--psbt-file', '-f', type=click.File('rb'), required=False)
-@click.option('--password', '-p', is_flag=True, help="Prompt for password")
-@click.option('--debug', '-d', is_flag=True, help='Show values used')
+#@main.command('auth')
+#@click.argument('username', type=str, metavar="USERNAME", required=True)
+#@click.argument('token', type=str, metavar="[TOTP]", required=False)
+#@click.option('--psbt-file', '-f', type=click.File('rb'), required=False)
+#@click.option('--password', '-p', is_flag=True, help="Prompt for password")
+#@click.option('--debug', '-d', is_flag=True, help='Show values used')
 def user_auth(username, token=None, password=None, prompt=None, totp=None, psbt_file=None, debug=False):
     '''
 Indicate specific user is present (for HSM).
@@ -955,8 +955,8 @@ password, the PSBT file in question must be provided.
         token = HMAC(secret, msg=psbt_hash, digestmod=sha256).digest()
 
         if debug:
-            click.echo("  secret = %s" % B2A(secret))
-            click.echo("    salt = %s" % B2A(salt))
+            print("  secret = %s" % B2A(secret))
+            print("    salt = %s" % B2A(salt))
 
         totp_time = 0
     else:
@@ -970,7 +970,7 @@ password, the PSBT file in question must be provided.
 
         now = int(time.time())
         if now % 30 < 5:
-            click.echo("NOTE: TOTP was on edge of expiry limit! Might not work.")
+            print("NOTE: TOTP was on edge of expiry limit! Might not work.")
         totp_time =  now // 30
 
     #raise click.UsageError("Need PSBT file as part of HMAC for password")
@@ -979,18 +979,18 @@ password, the PSBT file in question must be provided.
     username = username.encode('ascii')
 
     if debug:
-        click.echo(" username = %s" % username.decode('ascii'))
-        click.echo("    token = %s" % (B2A(token) if len(token) > 6 else token.decode('ascii')))
-        click.echo("totp_time = %d" % totp_time)
+        print(" username = %s" % username.decode('ascii'))
+        print("    token = %s" % (B2A(token) if len(token) > 6 else token.decode('ascii')))
+        print("totp_time = %d" % totp_time)
 
     resp = dev.send_recv(CCProtocolPacker.user_auth(username, token, totp_time))
 
     if not resp:
-        click.echo("Correct or queued")
+        print("Correct or queued")
     else:
-        click.echo(f'Problem: {resp}')
+        print(f'Problem: {resp}')
 
-@main.command('get-locker')
+#@main.command('get-locker')
 def get_storage_locker():
     "Get the value held in the Storage Locker (not Bitcoin related, reserved for HSM use)"
 
@@ -998,6 +998,6 @@ def get_storage_locker():
 
     ls = dev.send_recv(CCProtocolPacker.get_storage_locker(), timeout=None)
 
-    click.echo(ls)
+    print(ls)
 
 # EOF
