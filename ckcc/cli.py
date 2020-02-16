@@ -10,7 +10,7 @@
 # - see <https://github.com/trezor/cython-hidapi/blob/master/hid.pyx> for HID api
 #
 #
-import hid, click, sys, os, pdb, struct, time, io, re, json
+import hid, sys, os, pdb, struct, time, io, re, json
 from pprint import pformat
 from binascii import b2a_hex, a2b_hex
 from hashlib import sha256
