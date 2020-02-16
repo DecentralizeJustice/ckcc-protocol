@@ -1,6 +1,8 @@
 Commands List
 Done:
 list
+xfp
+xpub
 
 
 Pending:
@@ -8,8 +10,6 @@ Pending:
 p2sh
 bag
 chain
-xpub
-xfp
 version
 upgrade
 upload
